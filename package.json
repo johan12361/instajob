@@ -1,0 +1,71 @@
+{
+  "name": "instajob",
+  "version": "0.1.0",
+  "description": "A lightweight scheduler that polls your database and fires jobs at the right time — no cron syntax required.",
+  "keywords": [
+    "scheduler",
+    "job",
+    "queue",
+    "cron",
+    "polling",
+    "timer",
+    "task"
+  ],
+  "author": "johan12361",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/johan12361/instajob"
+  },
+  "homepage": "https://github.com/johan12361/instajob#readme",
+  "bugs": {
+    "url": "https://github.com/johan12361/instajob/issues"
+  },
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "exports": {
+    ".": {
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      },
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      }
+    }
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "build": "tsup",
+    "playground": "bun playground/playground.ts",
+    "lint": "eslint src/**/*.ts",
+    "lint:fix": "eslint src/**/*.ts --fix",
+    "format": "prettier --write \"src/**/*.ts\"",
+    "typecheck": "tsc --noEmit",
+    "test:run": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "prepublishOnly": "bun typecheck && bun lint && bun test:run && bun build"
+  },
+  "devDependencies": {
+    "@types/bun": "1.3.12",
+    "@typescript-eslint/eslint-plugin": "8.58.1",
+    "@typescript-eslint/parser": "8.58.1",
+    "eslint": "10.2.0",
+    "eslint-config-prettier": "10.1.8",
+    "eslint-plugin-prettier": "5.5.5",
+    "prettier": "3.8.2",
+    "tsup": "8.5.1",
+    "typescript": "5.9.3",
+    "vitest": "^4.1.4"
+  }
+}

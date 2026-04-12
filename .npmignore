@@ -1,0 +1,21 @@
+# Source files
+src/
+playground/
+
+# Config files
+tsconfig.json
+eslint.config.mjs
+.prettierrc.json
+
+# Development
+node_modules/
+*.log
+.vscode/
+.git/
+.gitignore
+
+# Lock files
+pnpm-lock.yaml
+yarn.lock
+package-lock.json
+bun.lock
