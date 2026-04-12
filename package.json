@@ -54,12 +54,13 @@
     "typecheck": "tsc --noEmit",
     "test:run": "vitest run",
     "test:coverage": "vitest run --coverage",
-    "prepublishOnly": "bun typecheck && bun lint && bun test:run && bun build"
+    "prepublishOnly": "bun typecheck && bun lint && bun test:run && bun run build"
   },
   "devDependencies": {
     "@types/bun": "1.3.12",
     "@typescript-eslint/eslint-plugin": "8.58.1",
     "@typescript-eslint/parser": "8.58.1",
+    "@vitest/coverage-v8": "4.1.4",
     "eslint": "10.2.0",
     "eslint-config-prettier": "10.1.8",
     "eslint-plugin-prettier": "5.5.5",

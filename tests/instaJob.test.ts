@@ -17,7 +17,7 @@ function makeConfig(overrides: Partial<JobConfig<TestJob>> = {}): JobConfig<Test
     fetchJobs: vi.fn().mockResolvedValue([]),
     getRunDate: (job) => job.runAt,
     onTick: vi.fn().mockResolvedValue(undefined),
-    ...overrides,
+    ...overrides
   }
 }
 
@@ -74,7 +74,7 @@ describe('InstaJob', () => {
     it('calls onTick for a job scheduled within the interval', async () => {
       const job = makeJob(500)
       const config = makeConfig({
-        fetchJobs: vi.fn().mockResolvedValue([job]),
+        fetchJobs: vi.fn().mockResolvedValue([job])
       })
       const scheduler = new InstaJob(config)
 
@@ -87,7 +87,7 @@ describe('InstaJob', () => {
     it('does not call onTick for a job beyond the interval window', async () => {
       const job = makeJob(120_000) // beyond 60s interval
       const config = makeConfig({
-        fetchJobs: vi.fn().mockResolvedValue([job]),
+        fetchJobs: vi.fn().mockResolvedValue([job])
       })
       const scheduler = new InstaJob(config)
 
@@ -99,13 +99,9 @@ describe('InstaJob', () => {
 
     it('calls onTick for multiple jobs in parallel', async () => {
       const jobs = [makeJob(100), makeJob(200), makeJob(300)]
-      const order: string[] = []
       const config = makeConfig({
         fetchJobs: vi.fn().mockResolvedValue(jobs),
-        onTick: vi.fn().mockImplementation(async (job: TestJob) => {
-          order.push(job.id)
-        }),
-        parallel: true,
+        parallel: true
       })
       const scheduler = new InstaJob(config)
 
@@ -118,7 +114,7 @@ describe('InstaJob', () => {
     it('calls onTick immediately for a job with past runAt', async () => {
       const job = makeJob(-5000) // already past
       const config = makeConfig({
-        fetchJobs: vi.fn().mockResolvedValue([job]),
+        fetchJobs: vi.fn().mockResolvedValue([job])
       })
       const scheduler = new InstaJob(config)
 
@@ -138,12 +134,13 @@ describe('InstaJob', () => {
         onTick: vi.fn().mockImplementation(async (job: TestJob) => {
           order.push(job.id)
         }),
-        parallel: false,
+        parallel: false
       })
       const scheduler = new InstaJob(config)
 
-      await scheduler.start()
-      await vi.runAllTimersAsync()
+      const startPromise = scheduler.start()
+      await vi.advanceTimersByTimeAsync(100)
+      await startPromise
 
       expect(config.onTick).toHaveBeenCalledTimes(3)
       expect(order).toEqual(jobs.map((j) => j.id))
@@ -153,7 +150,7 @@ describe('InstaJob', () => {
       const job = makeJob(120_000)
       const config = makeConfig({
         fetchJobs: vi.fn().mockResolvedValue([job]),
-        parallel: false,
+        parallel: false
       })
       const scheduler = new InstaJob(config)
 
@@ -167,7 +164,7 @@ describe('InstaJob', () => {
   describe('error handling', () => {
     it('does not throw if fetchJobs rejects', async () => {
       const config = makeConfig({
-        fetchJobs: vi.fn().mockRejectedValue(new Error('DB error')),
+        fetchJobs: vi.fn().mockRejectedValue(new Error('DB error'))
       })
       const scheduler = new InstaJob(config)
 
@@ -178,12 +175,12 @@ describe('InstaJob', () => {
       const job = makeJob(0)
       const config = makeConfig({
         fetchJobs: vi.fn().mockResolvedValue([job]),
-        onTick: vi.fn().mockRejectedValue(new Error('tick error')),
+        onTick: vi.fn().mockRejectedValue(new Error('tick error'))
       })
       const scheduler = new InstaJob(config)
 
       await scheduler.start()
-      await expect(vi.advanceTimersByTimeAsync(100)).resolves.toBeUndefined()
+      await vi.advanceTimersByTimeAsync(100)
     })
   })
 
