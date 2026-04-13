@@ -3,6 +3,7 @@ import type { JobConfig } from './types/config.js'
 export class InstaJob<T> {
   config: JobConfig<T>
   private readonly activeTimers = new Set<NodeJS.Timeout>()
+  private readonly scheduledIds = new Set<string>()
   private readonly log: (...args: unknown[]) => void
 
   constructor(config: JobConfig<T>) {
@@ -30,6 +31,11 @@ export class InstaJob<T> {
           const delay = runDate.getTime() - Date.now()
 
           if (delay <= this.config.checkIntervalMs) {
+            if (this.config.getJobId) {
+              const id = this.config.getJobId(item)
+              if (this.scheduledIds.has(id)) continue
+              this.scheduledIds.add(id)
+            }
             this.log('Scheduling job (parallel) in', Math.max(0, delay), 'ms')
             this.createTimeout(item, Math.max(0, delay))
           }
@@ -40,6 +46,11 @@ export class InstaJob<T> {
           const delay = runDate.getTime() - Date.now()
 
           if (delay <= this.config.checkIntervalMs) {
+            if (this.config.getJobId) {
+              const id = this.config.getJobId(item)
+              if (this.scheduledIds.has(id)) continue
+              this.scheduledIds.add(id)
+            }
             this.log('Scheduling job (sequential) in', Math.max(0, delay), 'ms')
             await this.waitAndExecute(item, Math.max(0, delay))
           }
@@ -54,19 +65,18 @@ export class InstaJob<T> {
     return new Promise((resolve) => {
       const timer = setTimeout(() => {
         this.activeTimers.delete(timer)
-        void this.executeJob(item).then(resolve)
+        void this.executeJob(item, timer).then(resolve)
       }, delay)
       this.activeTimers.add(timer)
     })
   }
 
   private createTimeout(item: T, delay: number): void {
-    const timer = setTimeout(() => void this.executeJob(item), delay)
-
+    const timer = setTimeout(() => void this.executeJob(item, timer), delay)
     this.activeTimers.add(timer)
   }
 
-  private async executeJob(item: T): Promise<void> {
+  private async executeJob(item: T, timer: NodeJS.Timeout): Promise<void> {
     try {
       this.log('Executing job —', new Date().toISOString())
       await this.config.onTick(item)
@@ -74,9 +84,8 @@ export class InstaJob<T> {
     } catch (error) {
       console.error('[InstaJob] Error executing job:', error)
     } finally {
-      this.activeTimers.forEach((timer) => {
-        if (timer) this.activeTimers.delete(timer)
-      })
+      this.activeTimers.delete(timer)
+      if (this.config.getJobId) this.scheduledIds.delete(this.config.getJobId(item))
     }
   }
 }

@@ -7,6 +7,8 @@ export interface JobConfig<T> {
   onTick: (item: T) => Promise<void>
   // Polling interval (e.g. every hour)
   checkIntervalMs: number
+  // If provided, used to deduplicate jobs across cycles (prevents scheduling the same job twice)
+  getJobId?: (item: T) => string
   // If true (default), jobs in a cycle run in parallel; if false, one after another
   parallel?: boolean
   // If true, enables logs to monitor the cycle and job execution

@@ -1,6 +1,6 @@
 {
   "name": "instajob",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "A lightweight scheduler that polls your database and fires jobs at the right time — no cron syntax required.",
   "keywords": [
     "scheduler",
