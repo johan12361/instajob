@@ -25,40 +25,31 @@ export class InstaJob<T> {
 
       const parallel = this.config.parallel ?? true
 
-      if (parallel) {
-        for (const item of items) {
-          const runDate = this.config.getRunDate(item)
-          const delay = runDate.getTime() - Date.now()
+      for (const item of items) {
+        const delay = this.config.getRunDate(item).getTime() - Date.now()
+        if (delay > this.config.checkIntervalMs) continue
+        if (!this.trySchedule(item)) continue
 
-          if (delay <= this.config.checkIntervalMs) {
-            if (this.config.getJobId) {
-              const id = this.config.getJobId(item)
-              if (this.scheduledIds.has(id)) continue
-              this.scheduledIds.add(id)
-            }
-            this.log('Scheduling job (parallel) in', Math.max(0, delay), 'ms')
-            this.createTimeout(item, Math.max(0, delay))
-          }
-        }
-      } else {
-        for (const item of items) {
-          const runDate = this.config.getRunDate(item)
-          const delay = runDate.getTime() - Date.now()
-
-          if (delay <= this.config.checkIntervalMs) {
-            if (this.config.getJobId) {
-              const id = this.config.getJobId(item)
-              if (this.scheduledIds.has(id)) continue
-              this.scheduledIds.add(id)
-            }
-            this.log('Scheduling job (sequential) in', Math.max(0, delay), 'ms')
-            await this.waitAndExecute(item, Math.max(0, delay))
-          }
+        const safeDelay = Math.max(0, delay)
+        if (parallel) {
+          this.log('Scheduling job (parallel) in', safeDelay, 'ms')
+          this.createTimeout(item, safeDelay)
+        } else {
+          this.log('Scheduling job (sequential) in', safeDelay, 'ms')
+          await this.waitAndExecute(item, safeDelay)
         }
       }
     } catch (error) {
       console.error('[InstaJob] Error during job fetch cycle:', error)
     }
+  }
+
+  private trySchedule(item: T): boolean {
+    if (!this.config.getJobId) return true
+    const id = this.config.getJobId(item)
+    if (this.scheduledIds.has(id)) return false
+    this.scheduledIds.add(id)
+    return true
   }
 
   private waitAndExecute(item: T, delay: number): Promise<void> {

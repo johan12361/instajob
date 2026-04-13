@@ -9,6 +9,7 @@ A lightweight, database-agnostic job scheduler for Node.js & Bun. Poll your data
 - [Usage](#usage)
   - [Basic Setup](#basic-setup)
   - [Parallel vs Sequential Execution](#parallel-vs-sequential-execution)
+  - [Preventing Duplicate Executions](#preventing-duplicate-executions)
   - [Enabling Logs](#enabling-logs)
 - [Configuration](#configuration)
 - [TypeScript Types](#typescript-types)
@@ -109,6 +110,22 @@ const scheduler = new InstaJob<MyJob>({
 })
 ```
 
+### Preventing Duplicate Executions
+
+If your `fetchJobs` can return the same job in multiple consecutive cycles (e.g. a job scheduled 65 minutes from now with a 60-minute interval), instajob may create two timers for the same job. Use `getJobId` to avoid this:
+
+```ts
+const scheduler = new InstaJob<MyJob>({
+  checkIntervalMs: 60_000,
+  fetchJobs: async () => getJobs(),
+  getRunDate: (job) => job.runAt,
+  onTick: async (job) => processJob(job),
+  getJobId: (job) => job.id // unique identifier per job
+})
+```
+
+When `getJobId` is provided, the scheduler tracks which jobs are already scheduled and skips duplicates. Once a job finishes (or fails), its ID is released so it can be scheduled again in a future cycle.
+
 ### Enabling Logs
 
 Enable built-in logging to monitor cycle activity and job execution:
@@ -140,14 +157,15 @@ Errors are always logged regardless of the `logging` setting.
 
 All options for `JobConfig<T>`:
 
-| Option            | Type                         | Required | Default | Description                                                   |
-| ----------------- | ---------------------------- | -------- | ------- | ------------------------------------------------------------- |
-| `fetchJobs`       | `() => Promise<T[]>`         | ✅       | —       | Fetches upcoming jobs from your data source                   |
-| `getRunDate`      | `(item: T) => Date`          | ✅       | —       | Returns the scheduled run date for a job                      |
-| `onTick`          | `(item: T) => Promise<void>` | ✅       | —       | Executed when a job's time arrives                            |
-| `checkIntervalMs` | `number`                     | ✅       | —       | Polling interval in milliseconds (e.g. `60_000` for 1 min)    |
-| `parallel`        | `boolean`                    | ❌       | `true`  | Run cycle jobs in parallel (`true`) or sequentially (`false`) |
-| `logging`         | `boolean`                    | ❌       | `false` | Enable built-in console logs for monitoring                   |
+| Option            | Type                         | Required | Default | Description                                                               |
+| ----------------- | ---------------------------- | -------- | ------- | ------------------------------------------------------------------------- |
+| `fetchJobs`       | `() => Promise<T[]>`         | ✅       | —       | Fetches upcoming jobs from your data source                               |
+| `getRunDate`      | `(item: T) => Date`          | ✅       | —       | Returns the scheduled run date for a job                                  |
+| `onTick`          | `(item: T) => Promise<void>` | ✅       | —       | Executed when a job's time arrives                                        |
+| `checkIntervalMs` | `number`                     | ✅       | —       | Polling interval in milliseconds (e.g. `60_000` for 1 min)                |
+| `getJobId`        | `(item: T) => string`        | ❌       | —       | Returns a unique ID per job to prevent duplicate scheduling across cycles |
+| `parallel`        | `boolean`                    | ❌       | `true`  | Run cycle jobs in parallel (`true`) or sequentially (`false`)             |
+| `logging`         | `boolean`                    | ❌       | `false` | Enable built-in console logs for monitoring                               |
 
 ## TypeScript Types
 

@@ -161,6 +161,59 @@ describe('InstaJob', () => {
     })
   })
 
+  describe('deduplication (getJobId)', () => {
+    it('does not schedule the same job twice across cycles', async () => {
+      const job = makeJob(0)
+      let resolveOnTick!: () => void
+      const onTickPromise = new Promise<void>((res) => {
+        resolveOnTick = res
+      })
+
+      const config = makeConfig({
+        checkIntervalMs: 10_000,
+        fetchJobs: vi.fn().mockResolvedValue([job]),
+        getJobId: (j) => j.id,
+        onTick: vi.fn().mockReturnValue(onTickPromise) // stays in-flight
+      })
+      const scheduler = new InstaJob(config)
+
+      await scheduler.start()
+      await vi.advanceTimersByTimeAsync(100) // fire the timer
+
+      // cycle 2 runs while onTick is still in-flight
+      await vi.advanceTimersByTimeAsync(10_000)
+
+      // resolve onTick now
+      resolveOnTick()
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(config.onTick).toHaveBeenCalledTimes(1)
+    })
+
+    it('allows the same job to be scheduled again after it completes', async () => {
+      const job = makeJob(0)
+      let callCount = 0
+      const config = makeConfig({
+        fetchJobs: vi.fn().mockResolvedValue([job]),
+        getJobId: (j) => j.id,
+        onTick: vi.fn().mockImplementation(async () => {
+          callCount++
+        })
+      })
+      const scheduler = new InstaJob(config)
+
+      // first cycle
+      await scheduler.start()
+      await vi.advanceTimersByTimeAsync(100)
+      expect(callCount).toBe(1)
+
+      // second cycle — job finished so ID was released, should run again
+      await vi.advanceTimersByTimeAsync(60_000)
+      await vi.advanceTimersByTimeAsync(100)
+      expect(callCount).toBe(2)
+    })
+  })
+
   describe('error handling', () => {
     it('does not throw if fetchJobs rejects', async () => {
       const config = makeConfig({
