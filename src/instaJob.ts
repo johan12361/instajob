@@ -23,21 +23,14 @@ export class InstaJob<T> {
 			const items = await this.config.fetchJobs()
 			this.log('Jobs fetched:', items.length)
 
-			const parallel = this.config.parallel ?? true
-
 			for (const item of items) {
 				const delay = this.config.getRunDate(item).getTime() - Date.now()
 				if (delay > this.config.checkIntervalMs) continue
 				if (!this.trySchedule(item)) continue
 
 				const safeDelay = Math.max(0, delay)
-				if (parallel) {
-					this.log('Scheduling job (parallel) in', safeDelay, 'ms')
-					this.createTimeout(item, safeDelay)
-				} else {
-					this.log('Scheduling job (sequential) in', safeDelay, 'ms')
-					await this.waitAndExecute(item, safeDelay)
-				}
+				this.log('Scheduling job in', safeDelay, 'ms')
+				this.createTimeout(item, safeDelay)
 			}
 		} catch (error) {
 			console.error('[InstaJob] Error during job fetch cycle:', error)
@@ -50,16 +43,6 @@ export class InstaJob<T> {
 		if (this.scheduledIds.has(id)) return false
 		this.scheduledIds.add(id)
 		return true
-	}
-
-	private waitAndExecute(item: T, delay: number): Promise<void> {
-		return new Promise((resolve) => {
-			const timer = setTimeout(() => {
-				this.activeTimers.delete(timer)
-				void this.executeJob(item, timer).then(resolve)
-			}, delay)
-			this.activeTimers.add(timer)
-		})
 	}
 
 	private createTimeout(item: T, delay: number): void {

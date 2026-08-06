@@ -8,7 +8,6 @@ A lightweight, database-agnostic job scheduler for Node.js & Bun. Poll your data
 - [Quick Start](#quick-start)
 - [Usage](#usage)
   - [Basic Setup](#basic-setup)
-  - [Parallel vs Sequential Execution](#parallel-vs-sequential-execution)
   - [Preventing Duplicate Executions](#preventing-duplicate-executions)
   - [Enabling Logs](#enabling-logs)
 - [Configuration](#configuration)
@@ -86,30 +85,6 @@ const scheduler = new InstaJob<MyJob>({
 await scheduler.start()
 ```
 
-### Parallel vs Sequential Execution
-
-By default, all jobs fetched in a cycle are scheduled and executed in **parallel**. You can switch to **sequential** mode so each job waits for the previous one to finish before starting.
-
-```ts
-// Parallel (default) — jobs run concurrently
-const scheduler = new InstaJob<MyJob>({
-  checkIntervalMs: 60_000,
-  fetchJobs: async () => getJobs(),
-  getRunDate: (job) => job.runAt,
-  onTick: async (job) => processJob(job),
-  parallel: true
-})
-
-// Sequential — jobs run one after another
-const scheduler = new InstaJob<MyJob>({
-  checkIntervalMs: 60_000,
-  fetchJobs: async () => getJobs(),
-  getRunDate: (job) => job.runAt,
-  onTick: async (job) => processJob(job),
-  parallel: false
-})
-```
-
 ### Preventing Duplicate Executions
 
 If your `fetchJobs` can return the same job in multiple consecutive cycles (e.g. a job scheduled 65 minutes from now with a 60-minute interval), instajob may create two timers for the same job. Use `getJobId` to avoid this:
@@ -146,7 +121,7 @@ Sample output:
 [InstaJob] Starting — interval: 60000 ms
 [InstaJob] Cycle started — 2026-04-12T18:00:00.000Z
 [InstaJob] Jobs fetched: 3
-[InstaJob] Scheduling job (parallel) in 4200 ms
+[InstaJob] Scheduling job in 4200 ms
 [InstaJob] Executing job — 2026-04-12T18:00:04.200Z
 [InstaJob] Job completed — 2026-04-12T18:00:04.350Z
 ```
@@ -164,7 +139,6 @@ All options for `JobConfig<T>`:
 | `onTick`          | `(item: T) => Promise<void>` | ✅       | —       | Executed when a job's time arrives                                        |
 | `checkIntervalMs` | `number`                     | ✅       | —       | Polling interval in milliseconds (e.g. `60_000` for 1 min)                |
 | `getJobId`        | `(item: T) => string`        | ❌       | —       | Returns a unique ID per job to prevent duplicate scheduling across cycles |
-| `parallel`        | `boolean`                    | ❌       | `true`  | Run cycle jobs in parallel (`true`) or sequentially (`false`)             |
 | `logging`         | `boolean`                    | ❌       | `false` | Enable built-in console logs for monitoring                               |
 
 ## TypeScript Types
@@ -196,7 +170,6 @@ This means `fetchJobs` should return jobs scheduled **within the next interval**
 
 - ✅ Full TypeScript support
 - ✅ Database-agnostic — works with any data source
-- ✅ Parallel and sequential execution modes
 - ✅ Built-in optional logging
 - ✅ Promise-based API (async/await)
 - ✅ Zero dependencies
