@@ -1,12 +1,12 @@
 import { defineConfig } from 'tsup'
 
 export default defineConfig({
-  entry: ['src/index.ts'],
-  format: ['esm', 'cjs'],
-  dts: true,
-  clean: true,
-  removeNodeProtocol: false,
-  esbuildOptions(options) {
-    options.legalComments = 'none'
-  }
+	entry: ['src/index.ts'],
+	format: ['esm', 'cjs'],
+	dts: true,
+	clean: true,
+	removeNodeProtocol: false,
+	esbuildOptions(options) {
+		options.legalComments = 'none'
+	}
 })
